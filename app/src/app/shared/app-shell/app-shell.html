@@ -7,7 +7,14 @@
   </div>
 }
 
-<div class="flex min-h-screen bg-paper">
+@if (demo) {
+  <div class="fixed top-0 inset-x-0 z-40 h-7 flex items-center justify-center gap-3 bg-accent text-white text-xs font-medium">
+    <span>Demo mode: data is saved only in this browser</span>
+    <button type="button" class="underline underline-offset-2 hover:no-underline" (click)="resetDemo()">Reset</button>
+  </div>
+}
+
+<div class="flex min-h-screen bg-paper" [class.pt-7]="demo">
   <aside
     class="hidden sm:flex shrink-0 border-r border-paper-2 bg-surface flex-col p-3 transition-[width] duration-150"
     [class.w-56]="!collapsed()"
@@ -114,6 +121,7 @@
           <span>{{ theme.dark() ? 'Light mode' : 'Dark mode' }}</span>
         }
       </button>
+      @if (!demo) {
       <button
         type="button"
         [title]="collapsed() ? 'Sign out' : ''"
@@ -130,6 +138,7 @@
           <span>Sign out</span>
         }
       </button>
+      }
     </div>
   </aside>
 
@@ -186,6 +195,7 @@
         Dark
       }
     </button>
+    @if (!demo) {
     <button
       type="button"
       class="flex-1 flex flex-col items-center justify-center gap-0.5 text-[11px] text-ink-soft"
@@ -198,6 +208,7 @@
       </svg>
       Sign out
     </button>
+    }
   </nav>
   }
 </div>

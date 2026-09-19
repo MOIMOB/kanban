@@ -41,6 +41,32 @@ jobs:
           start: npm start
           wait-on: 'http://localhost:4200'
 
+  app-demo-e2e:
+    name: Angular app — demo mode (DEMO_MODE env var) e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+      - name: Build with the real Netlify build command and DEMO_MODE=true
+        working-directory: app
+        env:
+          DEMO_MODE: 'true'
+        run: |
+          CMD=$(python -c "import tomllib; print(tomllib.load(open('../netlify.toml','rb'))['build']['command'])")
+          bash -c "$CMD"
+          grep -q "DEMO_MODE: 'true'" public/env.js
+      - name: Cypress demo run
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: app
+          install: false
+          config-file: cypress.demo.config.ts
+          start: npx --yes serve@14 -s dist/app/browser -l 4200
+          wait-on: 'http://localhost:4200'
+
   homeassistant-test:
     name: Home Assistant integration â€” pytest
     runs-on: ubuntu-latest
