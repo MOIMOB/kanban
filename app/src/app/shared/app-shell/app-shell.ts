@@ -5,6 +5,8 @@ import { filter, map } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { ThemeService } from '../../core/theme.service';
 import { LoadingIndicatorService } from '../../core/loading-indicator.service';
+import { isDemoMode } from '../../core/config';
+import { resetDemoData } from '../../core/demo-client';
 
 const STORAGE_KEY = 'kanban:sidebarCollapsed';
 // Matches /boards/:id but not the /boards list itself.
@@ -32,6 +34,8 @@ export class AppShell {
 
   protected readonly showMobileNav = computed(() => !BOARD_DETAIL_RE.test(this.url()));
 
+  protected readonly demo = isDemoMode();
+
   collapsed = signal(localStorage.getItem(STORAGE_KEY) === 'true');
 
   toggleCollapsed(): void {
@@ -43,5 +47,11 @@ export class AppShell {
   async signOut(): Promise<void> {
     await this.auth.signOut();
     this.router.navigateByUrl('/login');
+  }
+
+  resetDemo(): void {
+    if (!confirm('Reset demo data to the starting state?')) return;
+    resetDemoData();
+    location.assign('/boards');
   }
 }

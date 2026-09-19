@@ -93,3 +93,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 [MIT](LICENSE)
+
+## Demo mode
+
+Set `DEMO_MODE=true` (build-time env var) to build a Supabase-free version: login is skipped,
+data is kept in the browser's localStorage (snapshots in IndexedDB), and a banner marks the app as a demo.
+On Netlify, create a second site from this repo and set `DEMO_MODE=true` in its environment
+(`SUPABASE_*` not needed). Locally, put `DEMO_MODE: 'true'` in `app/public/env.js`.
+Sharing is unavailable in demo mode.

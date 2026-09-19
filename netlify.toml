@@ -1,7 +1,7 @@
 [build]
   base = "app"
   publish = "dist/app/browser"
-  command = "echo \"window.__env = { SUPABASE_URL: '$SUPABASE_URL', SUPABASE_ANON_KEY: '$SUPABASE_ANON_KEY' };\" > public/env.js && npm run build"
+  command = "echo \"window.__env = { SUPABASE_URL: '$SUPABASE_URL', SUPABASE_ANON_KEY: '$SUPABASE_ANON_KEY', DEMO_MODE: '$DEMO_MODE' };\" > public/env.js && npm run build"
 
 [[redirects]]
   from = "/*"
