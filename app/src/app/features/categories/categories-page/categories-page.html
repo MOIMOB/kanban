@@ -1,0 +1,53 @@
+<div class="min-h-screen bg-paper">
+  <main class="max-w-md mx-auto px-6 pt-8 pb-24 sm:pb-8">
+    <h1 class="font-display text-lg font-semibold text-ink tracking-tight mb-6">Manage categories</h1>
+
+    <div class="flex justify-end mb-8">
+      <button
+        type="button"
+        class="bg-accent hover:bg-accent-dark transition-colors text-white rounded-md px-4 py-2 text-sm font-medium"
+        (click)="openCreateDialog()"
+      >
+        + New category
+      </button>
+    </div>
+
+    @if (categoriesService.categories().length === 0) {
+      @if (categoriesService.loaded()) {
+        <p class="text-sm text-ink-soft">No categories yet. Create your first one above.</p>
+      }
+    } @else {
+      <ul class="flex flex-col gap-2">
+        @for (category of categoriesService.categories(); track category.id) {
+          <li
+            class="flex items-center gap-2 bg-surface rounded-lg px-3 py-2 border border-transparent hover:border-accent cursor-pointer transition-colors"
+            (click)="openEditDialog(category)"
+          >
+            <span class="h-3 w-3 shrink-0 rounded-full" [style.background]="category.color"></span>
+            <span class="flex-1 min-w-0 truncate text-sm text-ink">{{ category.name }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </main>
+</div>
+
+@if (dialogMode(); as dm) {
+  <app-category-dialog
+    [category]="dm.mode === 'edit' ? dm.category : null"
+    (closed)="dialogMode.set(null)"
+    (saved)="onCategorySaved()"
+    (deleteRequested)="onDeleteRequested($event)"
+  />
+}
+
+@if (deletingCategory(); as category) {
+  <app-confirm-dialog
+    title="Delete category"
+    [message]="'Delete \'' + category.name + '\'? Cards tagged with it become uncategorized.'"
+    confirmLabel="Delete"
+    [busy]="deleting()"
+    (confirmed)="confirmDelete()"
+    (closed)="deletingCategory.set(null)"
+  />
+}

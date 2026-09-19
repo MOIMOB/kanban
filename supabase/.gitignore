@@ -1,0 +1,11 @@
+# Supabase
+.branches
+.temp
+
+# Node (CLI devDependency)
+node_modules
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local

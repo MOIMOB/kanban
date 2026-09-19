@@ -1,0 +1,54 @@
+move_card:
+  name: Move card
+  description: Moves a card to a (possibly different) column.
+  fields:
+    card_id:
+      name: Card ID
+      description: The id of the card to move.
+      required: true
+      example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      selector:
+        text:
+    column_id:
+      name: Column ID
+      description: The id of the destination column.
+      required: true
+      selector:
+        text:
+    position:
+      name: Position
+      description: Position within the destination column (0 = top).
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          mode: box
+
+add_card:
+  name: Add card
+  description: Adds a new card to a column.
+  fields:
+    column_id:
+      name: Column ID
+      description: The id of the column to add the card to.
+      required: true
+      selector:
+        text:
+    title:
+      name: Title
+      description: The card's title.
+      required: true
+      selector:
+        text:
+
+delete_card:
+  name: Delete card
+  description: Deletes a card.
+  fields:
+    card_id:
+      name: Card ID
+      description: The id of the card to delete.
+      required: true
+      selector:
+        text:

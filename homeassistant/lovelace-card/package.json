@@ -1,0 +1,18 @@
+{
+  "name": "kanban-lovelace-card",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Home Assistant Lovelace card that mirrors a kanban board (tap a card to move it between columns).",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/kanban-card.ts --bundle --format=esm --minify --outfile=dist/kanban-card.js",
+    "watch": "npm run build -- --watch"
+  },
+  "dependencies": {
+    "lit": "^3.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0"
+  }
+}

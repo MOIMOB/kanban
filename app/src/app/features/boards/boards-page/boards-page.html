@@ -1,0 +1,51 @@
+<div class="min-h-screen bg-paper">
+  <main class="max-w-3xl mx-auto px-6 pt-8 pb-24 sm:pb-8">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="font-display text-lg font-semibold text-ink tracking-tight">Your boards</h1>
+      <button
+        type="button"
+        class="bg-accent hover:bg-accent-dark transition-colors text-white rounded-md px-4 py-2 text-sm font-medium"
+        (click)="openCreateDialog()"
+      >
+        + New board
+      </button>
+    </div>
+
+    @if (navItems().length === 0) {
+      @if (boardsService.loaded()) {
+        <p class="text-sm text-ink-soft">No boards yet. Create your first one above.</p>
+      }
+    } @else {
+      <ngx-snapshot-nav-list
+        [items]="navItems()"
+        [variantKey]="theme.dark() ? 'dark' : 'light'"
+        [editable]="true"
+        editButtonPosition="overlay"
+        editIcon="⋮"
+        placeholderText="No snapshot yet"
+        (select)="onNavSelect($event)"
+        (edit)="onNavEdit($event)"
+      />
+    }
+  </main>
+</div>
+
+@if (dialogMode(); as dm) {
+  <app-board-dialog
+    [board]="dm.mode === 'edit' ? dm.board : null"
+    (closed)="dialogMode.set(null)"
+    (saved)="onBoardSaved($event)"
+    (deleteRequested)="onDeleteRequested($event)"
+  />
+}
+
+@if (deletingBoard(); as board) {
+  <app-confirm-dialog
+    title="Delete board"
+    [message]="'Delete \'' + board.name + '\'? This can\'t be undone.'"
+    confirmLabel="Delete"
+    [busy]="deleting()"
+    (confirmed)="confirmDelete()"
+    (closed)="deletingBoard.set(null)"
+  />
+}

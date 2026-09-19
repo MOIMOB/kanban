@@ -1,0 +1,327 @@
+<div class="min-h-screen bg-paper flex flex-col">
+  <header class="px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+    <div class="flex items-center gap-3">
+      <a routerLink="/boards" class="text-sm text-ink-soft hover:text-ink">&larr; Boards</a>
+      <h1 class="font-display text-lg font-semibold text-ink tracking-tight">{{ board()?.name }}</h1>
+    </div>
+    <div class="flex items-center gap-2 sm:gap-4">
+      @if (isOwner()) {
+        <button
+          class="text-sm rounded-md border border-border px-3 py-1.5 hover:border-accent hover:text-accent transition-colors bg-surface text-ink"
+          (click)="sharingOpen.set(true)"
+        >
+          Share
+        </button>
+      }
+    </div>
+  </header>
+
+  <main class="flex-1 overflow-x-auto px-6 py-6 pb-20 sm:pb-6 bg-paper">
+    @if (detail.columns().length > 0) {
+      <div
+        class="sm:hidden"
+        [class.hidden]="!singleColumnMode()"
+        (touchstart)="onTouchStart($event)"
+        (touchend)="onTouchEnd($event)"
+      >
+        @if (activeColumn(); as column) {
+          <div class="bg-paper-2/70 rounded-xl p-3 max-w-md mx-auto">
+            <div class="flex items-center justify-between mb-3">
+              <input
+                class="bg-transparent font-display font-medium text-sm text-ink w-full focus:outline-none"
+                [value]="column.name"
+                [disabled]="!canEdit()"
+                (change)="detail.renameColumn(column.id, $any($event.target).value)"
+              />
+              @if (canEdit()) {
+                <button
+                  class="text-ink-soft hover:text-red-600 dark:text-red-400 text-xs shrink-0"
+                  (click)="requestDeleteColumn(column)"
+                >
+                  ✕
+                </button>
+              }
+            </div>
+
+            <p class="text-[11px] text-ink-soft mb-2">
+              {{ detail.cardsIn(column.id).length }} card{{ detail.cardsIn(column.id).length === 1 ? '' : 's' }}
+            </p>
+
+            <div
+              cdkDropList
+              [id]="column.id"
+              [cdkDropListData]="detail.cardsIn(column.id)"
+              (cdkDropListDropped)="dropCard($event, column.id)"
+              class="flex flex-col gap-2 min-h-8"
+            >
+              @for (card of detail.cardsIn(column.id); track card.id) {
+                <div
+                  cdkDrag
+                  [cdkDragData]="card"
+                  [cdkDragDisabled]="!canEdit()"
+                  (click)="openCard(card)"
+                  class="group relative bg-surface rounded-lg p-3 shadow-sm border border-transparent cursor-pointer hover:border-accent hover:shadow-md transition-all"
+                >
+                  <button
+                    type="button"
+                    class="absolute top-1.5 right-1.5 text-ink-soft hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1"
+                    title="Copy title + description"
+                    (click)="copyCard(card, $event)"
+                  >
+                    ⧉
+                  </button>
+                  @if (categoryFor(card.category_id); as category) {
+                    <span
+                      class="inline-block text-[10px] font-medium text-white rounded-full px-2 py-0.5 mb-1"
+                      [style.background]="category.color"
+                    >
+                      {{ category.name }}
+                    </span>
+                  }
+                  <p class="text-sm text-ink font-medium pr-4">{{ card.title }}</p>
+                  @if (card.description) {
+                    <p class="text-xs text-ink-soft mt-1 line-clamp-3 max-h-12 overflow-hidden">{{ card.description }}</p>
+                  }
+                  @if (card.due_date) {
+                    <p class="text-[11px] text-accent font-medium mt-1.5">{{ card.due_date }}</p>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (canEdit()) {
+              <form class="mt-2 flex gap-1" (ngSubmit)="addCard(column.id)">
+                <input
+                  class="flex-1 text-xs rounded border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-accent bg-surface text-ink"
+                  placeholder="Add card"
+                  [ngModel]="newCardTitle()[column.id] ?? ''"
+                  (ngModelChange)="setNewCardTitle(column.id, $event)"
+                  name="newCard-{{ column.id }}"
+                />
+              </form>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <div
+      cdkDropList
+      cdkDropListOrientation="horizontal"
+      [cdkDropListData]="detail.columns()"
+      (cdkDropListDropped)="dropColumn($event)"
+      class="flex sm:!flex gap-4 items-start min-h-[240px] bg-paper"
+      [class.hidden]="singleColumnMode()"
+    >
+      <div #captureContent cdkDropListGroup class="flex gap-4 items-start">
+        @for (column of detail.columns(); track column.id) {
+          <div cdkDrag [cdkDragData]="column" [cdkDragDisabled]="!canEdit()" class="w-72 shrink-0">
+            <div class="bg-paper-2/70 rounded-xl p-3">
+              <div class="flex items-center justify-between mb-3" cdkDragHandle>
+                <input
+                  class="bg-transparent font-display font-medium text-sm text-ink w-full focus:outline-none"
+                  [value]="column.name"
+                  [disabled]="!canEdit()"
+                  (change)="detail.renameColumn(column.id, $any($event.target).value)"
+                />
+                @if (canEdit()) {
+                  <button
+                    class="text-ink-soft hover:text-red-600 dark:text-red-400 text-xs shrink-0"
+                    (click)="requestDeleteColumn(column)"
+                  >
+                    ✕
+                  </button>
+                }
+              </div>
+
+              <p class="text-[11px] text-ink-soft mb-2">
+                {{ detail.cardsIn(column.id).length }} card{{ detail.cardsIn(column.id).length === 1 ? '' : 's' }}
+              </p>
+
+              <div
+                cdkDropList
+                [id]="column.id"
+                [cdkDropListData]="detail.cardsIn(column.id)"
+                (cdkDropListDropped)="dropCard($event, column.id)"
+                class="flex flex-col gap-2 min-h-8"
+              >
+                @for (card of detail.cardsIn(column.id); track card.id) {
+                  <div
+                    cdkDrag
+                    [cdkDragData]="card"
+                    [cdkDragDisabled]="!canEdit()"
+                    (click)="openCard(card)"
+                    class="group relative bg-surface rounded-lg p-3 shadow-sm border border-transparent cursor-pointer hover:border-accent hover:shadow-md transition-all"
+                  >
+                    <button
+                      type="button"
+                      class="absolute top-1.5 right-1.5 text-ink-soft hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1"
+                      title="Copy title + description"
+                      (click)="copyCard(card, $event)"
+                    >
+                      ⧉
+                    </button>
+                    @if (categoryFor(card.category_id); as category) {
+                      <span
+                        class="inline-block text-[10px] font-medium text-white rounded-full px-2 py-0.5 mb-1"
+                        [style.background]="category.color"
+                      >
+                        {{ category.name }}
+                      </span>
+                    }
+                    <p class="text-sm text-ink font-medium pr-4">{{ card.title }}</p>
+                    @if (card.description) {
+                      <p class="text-xs text-ink-soft mt-1 line-clamp-3 max-h-12 overflow-hidden">{{ card.description }}</p>
+                    }
+                    @if (card.due_date) {
+                      <p class="text-[11px] text-accent font-medium mt-1.5">{{ card.due_date }}</p>
+                    }
+                  </div>
+                }
+              </div>
+
+              @if (canEdit()) {
+                <form
+                  class="mt-2 flex gap-1"
+                  (ngSubmit)="addCard(column.id)"
+                >
+                  <input
+                    class="flex-1 text-xs rounded border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-accent bg-surface text-ink"
+                    placeholder="Add card"
+                    [ngModel]="newCardTitle()[column.id] ?? ''"
+                    (ngModelChange)="setNewCardTitle(column.id, $event)"
+                    name="newCard-{{ column.id }}"
+                  />
+                </form>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (canEdit()) {
+        <form class="w-72 shrink-0" (ngSubmit)="addColumn()">
+          <input
+            class="w-full text-sm rounded-md border border-dashed border-border px-3 py-2 bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+            placeholder="+ Add column"
+            name="newColumnName"
+            [(ngModel)]="newColumnName"
+          />
+        </form>
+      }
+    </div>
+  </main>
+
+  <div class="sm:hidden fixed bottom-0 inset-x-0 z-20 bg-surface border-t border-paper-2 px-3 py-2 flex items-center gap-2">
+    <button
+      type="button"
+      class="shrink-0 text-sm rounded-md border border-border px-2.5 py-1.5 hover:border-accent hover:text-accent transition-colors bg-surface text-ink"
+      [title]="singleColumnMode() ? 'Switch to free scroll' : 'Switch to single column'"
+      (click)="toggleSingleColumnMode()"
+    >
+      {{ singleColumnMode() ? '▤' : '▦' }}
+    </button>
+    @if (singleColumnMode() && detail.columns().length > 0) {
+      <button
+        type="button"
+        class="text-ink-soft hover:text-ink disabled:opacity-30 px-2 py-1"
+        [disabled]="clampedColumnIndex() === 0"
+        (click)="prevColumn()"
+      >
+        ‹
+      </button>
+      <span class="flex-1 text-center text-xs text-ink-soft truncate">
+        {{ clampedColumnIndex() + 1 }} / {{ detail.columns().length }} · {{ activeColumn()?.name }}
+      </span>
+      <button
+        type="button"
+        class="text-ink-soft hover:text-ink disabled:opacity-30 px-2 py-1"
+        [disabled]="clampedColumnIndex() >= detail.columns().length - 1"
+        (click)="nextColumn()"
+      >
+        ›
+      </button>
+    }
+  </div>
+</div>
+
+@if (editingCard(); as card) {
+  <div class="fixed inset-0 bg-black/30 flex items-center justify-center z-10" (click)="editingCard.set(null)">
+    <div class="bg-surface rounded-2xl p-6 w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="flex justify-end mb-1">
+        <button
+          type="button"
+          class="text-xs text-ink-soft hover:text-accent"
+          title="Copy title + description"
+          (click)="copyCard(card, $event)"
+        >
+          ⧉ Copy
+        </button>
+      </div>
+      <label class="block text-xs font-medium text-ink-soft mb-1">Title</label>
+      <input
+        class="w-full mb-3 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-surface text-ink"
+        [(ngModel)]="card.title"
+        name="cardTitle"
+      />
+
+      <label class="block text-xs font-medium text-ink-soft mb-1">Description</label>
+      <textarea
+        class="w-full mb-3 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-surface text-ink"
+        rows="3"
+        [(ngModel)]="card.description"
+        name="cardDescription"
+      ></textarea>
+
+      <label class="block text-xs font-medium text-ink-soft mb-1">Due date</label>
+      <input
+        class="w-full mb-3 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-surface text-ink"
+        type="date"
+        [(ngModel)]="card.due_date"
+        name="cardDueDate"
+      />
+
+      <div class="flex items-center justify-between mb-1">
+        <label class="block text-xs font-medium text-ink-soft">Category</label>
+        <a routerLink="/categories" class="text-xs text-accent hover:text-accent-dark transition-colors">
+          Manage categories
+        </a>
+      </div>
+      <select
+        class="w-full mb-6 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-surface text-ink"
+        name="cardCategory"
+        [(ngModel)]="card.category_id"
+      >
+        <option [ngValue]="null">No category</option>
+        @for (category of categoriesService.categories(); track category.id) {
+          <option [ngValue]="category.id">{{ category.name }}</option>
+        }
+      </select>
+
+      <div class="flex justify-between">
+        <button class="text-sm text-red-600 dark:text-red-400" (click)="deleteEditingCard()">Delete</button>
+        <div class="flex gap-2">
+          <button class="text-sm text-ink-soft hover:text-ink" (click)="editingCard.set(null)">Cancel</button>
+          <button class="text-sm bg-accent hover:bg-accent-dark transition-colors text-white rounded-md px-4 py-1.5" (click)="saveCard()">
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (sharingOpen()) {
+  <app-share-dialog [boardId]="boardId" (closed)="sharingOpen.set(false)" />
+}
+
+@if (deletingColumn(); as column) {
+  <app-confirm-dialog
+    title="Delete column"
+    [message]="'Delete \'' + column.name + '\'? Its ' + detail.cardsIn(column.id).length + ' cards will be deleted too.'"
+    confirmLabel="Delete"
+    [busy]="deletingColumnBusy()"
+    (confirmed)="confirmDeleteColumn()"
+    (closed)="deletingColumn.set(null)"
+  />
+}

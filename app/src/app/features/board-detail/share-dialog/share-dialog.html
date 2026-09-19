@@ -1,0 +1,66 @@
+<div class="fixed inset-0 bg-black/30 flex items-center justify-center z-20" (click)="closed.emit()">
+  <div class="bg-surface rounded-2xl p-6 w-full max-w-md" (click)="$event.stopPropagation()">
+    <h2 class="font-display text-sm font-semibold text-ink mb-4">Share board</h2>
+
+    <form class="flex gap-2 mb-4" (ngSubmit)="addMember()">
+      <input
+        class="flex-1 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-surface text-ink"
+        type="email"
+        placeholder="Collaborator's email"
+        name="email"
+        [(ngModel)]="email"
+      />
+      <select
+        class="rounded-md border border-border px-2 py-2 text-sm bg-surface text-ink"
+        name="role"
+        [(ngModel)]="role"
+      >
+        <option value="editor">Editor</option>
+        <option value="viewer">Viewer</option>
+      </select>
+      <button
+        type="submit"
+        class="bg-accent hover:bg-accent-dark transition-colors text-white rounded-md px-3 py-2 text-sm disabled:opacity-50"
+        [disabled]="busy()"
+      >
+        Add
+      </button>
+    </form>
+
+    @if (error()) {
+      <p class="text-sm text-red-600 dark:text-red-400 mb-4">{{ error() }}</p>
+    }
+
+    <p class="text-xs text-ink-soft mb-2">
+      Access is granted immediately — the collaborator must already have an account.
+    </p>
+
+    <ul class="divide-y divide-paper-2 mb-4">
+      @for (member of sharing.members(); track member.user_id) {
+        <li class="flex items-center justify-between py-2 text-sm">
+          <span class="text-ink">{{ member.email }}</span>
+          <div class="flex items-center gap-2">
+            <select
+              class="text-xs rounded border border-border px-1 py-0.5 bg-surface text-ink"
+              [ngModel]="member.role"
+              (ngModelChange)="sharing.updateRole(boardId, member.user_id, $event)"
+            >
+              <option value="editor">Editor</option>
+              <option value="viewer">Viewer</option>
+            </select>
+            <button
+              class="text-ink-soft hover:text-red-600 dark:text-red-400 text-xs"
+              (click)="sharing.removeMember(boardId, member.user_id)"
+            >
+              Remove
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+
+    <div class="flex justify-end">
+      <button class="text-sm text-ink-soft hover:text-ink" (click)="closed.emit()">Close</button>
+    </div>
+  </div>
+</div>

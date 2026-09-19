@@ -1,0 +1,9 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Each subproject (app/, homeassistant/, homeassistant/lovelace-card/) has
+# its own .gitignore for its own build output and dependencies.

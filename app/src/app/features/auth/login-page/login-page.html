@@ -1,0 +1,53 @@
+<div class="min-h-screen flex items-center justify-center bg-paper px-4">
+  <form
+    class="w-full max-w-sm bg-surface p-8 rounded-2xl shadow-sm border border-paper-2"
+    (ngSubmit)="submit()"
+  >
+    <div class="flex items-center gap-2 mb-1">
+      <span class="h-2.5 w-2.5 rounded-full bg-accent"></span>
+      <h1 class="font-display text-xl font-semibold text-ink tracking-tight">Kanban</h1>
+    </div>
+    <p class="text-sm text-ink-soft mb-6">
+      {{ mode() === 'signin' ? 'Sign in to your boards' : 'Create an account' }}
+    </p>
+
+    <label class="block text-sm font-medium text-ink mb-1">Email</label>
+    <input
+      class="w-full mb-4 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-surface text-ink"
+      type="email"
+      name="email"
+      required
+      [(ngModel)]="email"
+    />
+
+    <label class="block text-sm font-medium text-ink mb-1">Password</label>
+    <input
+      class="w-full mb-6 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-surface text-ink"
+      type="password"
+      name="password"
+      required
+      minlength="6"
+      [(ngModel)]="password"
+    />
+
+    @if (error()) {
+      <p class="text-sm text-red-600 dark:text-red-400 mb-4">{{ error() }}</p>
+    }
+
+    <button
+      type="submit"
+      class="w-full bg-accent hover:bg-accent-dark transition-colors text-white rounded-md py-2 text-sm font-medium disabled:opacity-50"
+      [disabled]="busy()"
+    >
+      {{ mode() === 'signin' ? 'Sign in' : 'Sign up' }}
+    </button>
+
+    <button
+      type="button"
+      class="w-full mt-3 text-sm text-ink-soft hover:text-ink"
+      (click)="toggleMode()"
+    >
+      {{ mode() === 'signin' ? "Need an account? Sign up" : 'Have an account? Sign in' }}
+    </button>
+  </form>
+</div>

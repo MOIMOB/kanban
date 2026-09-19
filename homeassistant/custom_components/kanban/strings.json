@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to your Kanban board",
+        "data": {
+          "supabase_url": "Supabase project URL",
+          "service_role_key": "Supabase service_role key",
+          "board_id": "Board ID",
+          "board_name": "Board name"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach Supabase with these settings. Check the URL, key, and board ID."
+    },
+    "abort": {
+      "already_configured": "This board is already configured."
+    }
+  }
+}

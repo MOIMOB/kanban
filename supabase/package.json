@@ -1,0 +1,16 @@
+{
+  "name": "kanban-supabase",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local Supabase stack (Postgres + Auth + Realtime) for development. Requires Docker.",
+  "scripts": {
+    "start": "supabase start",
+    "stop": "supabase stop",
+    "status": "supabase status",
+    "reset": "supabase db reset",
+    "studio": "supabase status -o env --override-name studio.api_url"
+  },
+  "devDependencies": {
+    "supabase": "^2.117.0"
+  }
+}
