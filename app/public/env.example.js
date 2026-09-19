@@ -6,4 +6,6 @@
 window.__env = {
   SUPABASE_URL: 'https://your-project.supabase.co',
   SUPABASE_ANON_KEY: 'your-anon-key',
+  // Set to 'true' for demo mode: no Supabase, no login, data kept in localStorage.
+  // DEMO_MODE: 'true',
 };

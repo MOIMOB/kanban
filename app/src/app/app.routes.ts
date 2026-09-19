@@ -1,10 +1,14 @@
-import { Routes } from '@angular/router';
+import { Router, Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { isDemoMode } from './core/config';
 import { authGuard } from './core/auth.guard';
 import { boardSnapshotGuard } from './features/board-detail/board-snapshot.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
+    // No login in demo mode.
+    canActivate: [() => (isDemoMode() ? inject(Router).parseUrl('/boards') : true)],
     loadComponent: () => import('./features/auth/login-page/login-page').then((m) => m.LoginPage),
   },
   {
