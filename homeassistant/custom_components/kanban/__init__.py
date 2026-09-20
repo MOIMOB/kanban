@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import voluptuous as vol
 
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -15,7 +19,10 @@ from .const import (
     ATTR_CARD_ID,
     ATTR_COLUMN_ID,
     ATTR_TITLE,
+    CARD_URL_PATH,
     CONF_BOARD_ID,
+    CONF_EMAIL,
+    CONF_PASSWORD,
     CONF_SERVICE_ROLE_KEY,
     CONF_SUPABASE_URL,
     DOMAIN,
@@ -43,10 +50,28 @@ ADD_CARD_SCHEMA = vol.Schema(
 DELETE_CARD_SCHEMA = vol.Schema({vol.Required(ATTR_CARD_ID): cv.string})
 
 
+async def _async_register_card(hass: HomeAssistant) -> None:
+    """Serve the bundled Lovelace card and load it on every dashboard."""
+    domain_data = hass.data.setdefault(DOMAIN, {})
+    if domain_data.get("card_registered"):
+        return
+    card = Path(__file__).parent / "www" / "kanban-card.js"
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(CARD_URL_PATH, str(card), cache_headers=False)]
+    )
+    add_extra_js_url(hass, CARD_URL_PATH)
+    domain_data["card_registered"] = True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    await _async_register_card(hass)
     session = async_get_clientsession(hass)
     api = KanbanApiClient(
-        session, entry.data[CONF_SUPABASE_URL], entry.data[CONF_SERVICE_ROLE_KEY]
+        session,
+        entry.data[CONF_SUPABASE_URL],
+        entry.data[CONF_SERVICE_ROLE_KEY],
+        entry.data.get(CONF_EMAIL),
+        entry.data.get(CONF_PASSWORD),
     )
     coordinator = KanbanCoordinator(hass, api, entry.data[CONF_BOARD_ID])
     await coordinator.async_config_entry_first_refresh()
@@ -61,7 +86,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        hass.data[DOMAIN].pop(entry.entry_id, None)
     return unloaded
 
 

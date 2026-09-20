@@ -5,14 +5,18 @@
         "title": "Connect to your Kanban board",
         "data": {
           "supabase_url": "Supabase project URL",
-          "service_role_key": "Supabase service_role key",
+          "service_role_key": "Supabase API key (anon key when using email/password)",
+          "email": "Email",
+          "password": "Password",
           "board_id": "Board ID",
           "board_name": "Board name"
         }
       }
     },
     "error": {
-      "cannot_connect": "Could not reach Supabase with these settings. Check the URL, key, and board ID."
+      "cannot_connect": "Could not reach Supabase with these settings. Check the URL, key, and board ID.",
+      "invalid_auth": "Email or password rejected by Supabase.",
+      "email_password_required": "Provide both email and password, or neither."
     },
     "abort": {
       "already_configured": "This board is already configured."
