@@ -1,3 +1,4 @@
+import { uuid } from '../../core/uuid';
 import { inject, Injectable, signal } from '@angular/core';
 import { getSupabase } from '../../core/supabase.client';
 import { AuthService } from '../../core/auth.service';
@@ -51,7 +52,7 @@ export class BoardsService {
     if (!userId) throw new Error('Not signed in');
 
     // Client-generated id, no `.select()`: RETURNING would fail the RLS SELECT check.
-    const id = crypto.randomUUID();
+    const id = uuid();
     const { error } = await this.supabase
       .from('kanban_boards')
       .insert({ id, name, owner_id: userId, user_id: userId });

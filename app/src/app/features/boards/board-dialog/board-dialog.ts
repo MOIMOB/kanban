@@ -1,4 +1,5 @@
 import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core';
+import { uuid } from '../../../core/uuid';
 import { FormsModule } from '@angular/forms';
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { BoardsService, DEFAULT_COLUMNS } from '../boards.service';
@@ -40,12 +41,12 @@ export class BoardDialog implements OnInit {
       this.loading.set(true);
       try {
         const existing = await this.boardsService.loadColumns(this.board.id);
-        this.columns.set(existing.map((c) => ({ key: crypto.randomUUID(), id: c.id, name: c.name })));
+        this.columns.set(existing.map((c) => ({ key: uuid(), id: c.id, name: c.name })));
       } finally {
         this.loading.set(false);
       }
     } else {
-      this.columns.set(DEFAULT_COLUMNS.map((name) => ({ key: crypto.randomUUID(), id: null, name })));
+      this.columns.set(DEFAULT_COLUMNS.map((name) => ({ key: uuid(), id: null, name })));
     }
   }
 
@@ -54,7 +55,7 @@ export class BoardDialog implements OnInit {
   }
 
   addColumn(): void {
-    this.columns.update((cols) => [...cols, { key: crypto.randomUUID(), id: null, name: '' }]);
+    this.columns.update((cols) => [...cols, { key: uuid(), id: null, name: '' }]);
   }
 
   removeColumn(key: string): void {

@@ -1,3 +1,4 @@
+import { uuid } from '../../core/uuid';
 import { inject, Injectable, signal } from '@angular/core';
 import { getSupabase } from '../../core/supabase.client';
 import { AuthService } from '../../core/auth.service';
@@ -37,7 +38,7 @@ export class CategoriesService {
   async createCategory(name: string, color: string = DEFAULT_CATEGORY_COLOR): Promise<Category> {
     const userId = await this.auth.currentUserId();
     if (!userId) throw new Error('Not signed in');
-    const id = crypto.randomUUID();
+    const id = uuid();
     const category: Category = { id, name, color, owner_id: userId, created_at: new Date().toISOString() };
 
     this.categories.update((list) => [...list, category].sort((a, b) => a.name.localeCompare(b.name)));

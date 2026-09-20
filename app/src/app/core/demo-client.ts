@@ -1,3 +1,4 @@
+import { uuid } from './uuid';
 /**
  * Minimal in-browser stand-in for the parts of the Supabase client this app uses.
  * Data lives in localStorage. Only used when `DEMO_MODE` is 'true' (see config.ts).
@@ -37,7 +38,7 @@ const CASCADE: Record<string, [string, string][]> = {
 };
 
 const now = () => new Date().toISOString();
-const uuid = () => crypto.randomUUID();
+
 
 function seed(): Db {
   const boardId = uuid();
