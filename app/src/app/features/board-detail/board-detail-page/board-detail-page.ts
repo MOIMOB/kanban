@@ -91,14 +91,17 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     clone.style.top = '-10000px';
     clone.style.left = '-10000px';
     clone.style.pointerEvents = 'none';
+    clone.style.width = `${content.scrollWidth}px`;
+    clone.style.padding = '16px';
+    clone.style.boxSizing = 'content-box';
+    clone.style.background = 'var(--color-paper)';
     document.body.append(clone);
     try {
+      // No `fit`: the package's fit frame sits at left:-99999px, which html2canvas
+      // then crops from the wrong origin. Capture the clone directly instead.
       await capture(clone, this.boardId, {
         variant: this.theme.dark() ? 'dark' : 'light',
-        width: 480,
-        height: 240,
-        fit: 'cover',
-        background: 'var(--color-paper)',
+        contentCrop: false,
         neutralizeColors: true,
       });
     } finally {
