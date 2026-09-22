@@ -37,7 +37,10 @@ this is HACS-compatible in structure but not yet submitted to HACS):
 3. **Settings → Devices & Services → Add Integration → Kanban Board.**
 4. Fill in:
    - **Supabase project URL** — e.g. `https://xxxx.supabase.co`
-   - **Supabase service_role key** — Settings → API in your Supabase project
+   - **Supabase API key** — Settings → API. Use the **anon key** together
+     with email/password (recommended; RLS applies as that user). Or leave
+     email/password empty and use the **service_role** key.
+   - **Email / Password** — your web-app login
    - **Board ID** — open the board in the web app; the id is in the URL
      (`/boards/<this-part>`)
    - **Board name** — just a label for the HA entities
@@ -67,18 +70,18 @@ run to my To Do list" → an automation matching that sentence calling
 
 ## Installing the Lovelace card
 
-1. Build it (or use the pre-built `dist/kanban-card.js` already committed
-   in this repo):
+The card JS ships inside the integration (`custom_components/kanban/www/kanban-card.js`)
+and is served + auto-loaded by it — no resource to add. Just add the card to a
+dashboard (YAML mode, or "Manual card" in the UI):
+
+1. (Only if you change the card source) rebuild — output goes straight into the integration:
    ```
    cd lovelace-card
    mise install
    npm install
    npm run build
    ```
-2. Copy `dist/kanban-card.js` into `<config>/www/kanban-card.js`.
-3. **Settings → Dashboards → ⋮ → Resources → Add Resource**:
-   URL `/local/kanban-card.js`, type **JavaScript Module**.
-4. Add the card to a dashboard (YAML mode, or "Manual card" in the UI):
+2. Add the card:
    ```yaml
    type: custom:kanban-card
    title: Groceries
