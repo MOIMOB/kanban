@@ -1,0 +1,61 @@
+<ng-template #header>
+  <input
+    class="bg-transparent font-display font-medium text-sm text-ink w-full focus:outline-none"
+    [value]="column().name"
+    [disabled]="!canEdit()"
+    (change)="detail.renameColumn(column().id, $any($event.target).value)"
+  />
+  @if (canEdit()) {
+    <button
+      class="text-ink-soft hover:text-red-600 dark:text-red-400 text-xs shrink-0"
+      (click)="deleteColumn.emit(column())"
+    >
+      ✕
+    </button>
+  }
+</ng-template>
+
+@if (dragHandle()) {
+  <div class="flex items-center justify-between mb-3" cdkDragHandle>
+    <ng-container *ngTemplateOutlet="header" />
+  </div>
+} @else {
+  <div class="flex items-center justify-between mb-3">
+    <ng-container *ngTemplateOutlet="header" />
+  </div>
+}
+
+@let cards = detail.cardsIn(column().id);
+<p class="text-[11px] text-ink-soft mb-2">
+  {{ cards.length }} card{{ cards.length === 1 ? '' : 's' }}
+</p>
+
+<div
+  cdkDropList
+  [id]="column().id"
+  [cdkDropListData]="cards"
+  (cdkDropListDropped)="dropCard($event)"
+  class="flex flex-col gap-2 min-h-8"
+>
+  @for (card of cards; track card.id) {
+    <app-card-tile
+      cdkDrag
+      [cdkDragData]="card"
+      [cdkDragDisabled]="!canEdit()"
+      [card]="card"
+      (click)="openCard.emit(card)"
+    />
+  }
+</div>
+
+@if (canEdit()) {
+  <form class="mt-2 flex gap-1" (ngSubmit)="addCard()">
+    <input
+      class="flex-1 text-xs rounded border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-accent bg-surface text-ink"
+      placeholder="Add card"
+      [ngModel]="newCardTitle()"
+      (ngModelChange)="newCardTitle.set($event)"
+      name="newCard-{{ column().id }}"
+    />
+  </form>
+}

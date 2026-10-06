@@ -1,0 +1,25 @@
+<button
+  type="button"
+  class="absolute top-1.5 right-1.5 text-ink-soft hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1"
+  title="Copy title + description"
+  (click)="copy($event)"
+>
+  ⧉
+</button>
+@if (category(); as category) {
+  <span
+    class="inline-block text-[10px] font-medium text-white rounded-full px-2 py-0.5 mb-1"
+    [style.background]="category.color"
+  >
+    {{ category.name }}
+  </span>
+}
+<p class="text-sm text-ink font-medium pr-4">{{ card().title }}</p>
+@if (card().description) {
+  <p class="text-xs text-ink-soft mt-1 line-clamp-3 max-h-12 overflow-hidden">
+    {{ card().description }}
+  </p>
+}
+@if (card().due_date) {
+  <p class="text-[11px] text-accent font-medium mt-1.5">{{ card().due_date }}</p>
+}

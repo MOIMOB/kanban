@@ -5,7 +5,6 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   CdkDrag,
   CdkDragDrop,
-  CdkDragHandle,
   CdkDropList,
   CdkDropListGroup,
   moveItemInArray,
@@ -15,6 +14,7 @@ import { BoardsService } from '../../boards/boards.service';
 import { CategoriesService } from '../../categories/categories.service';
 import { AuthService } from '../../../core/auth.service';
 import { ThemeService } from '../../../core/theme.service';
+import { BoardColumn } from '../board-column/board-column';
 import { ShareDialog } from '../share-dialog/share-dialog';
 import { ConfirmDialog } from '../../../shared/confirm-dialog/confirm-dialog';
 import type { Card, Column } from '../../../core/models';
@@ -22,7 +22,7 @@ import type { Card, Column } from '../../../core/models';
 @Component({
   selector: 'app-board-detail-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, CdkDropList, CdkDropListGroup, CdkDrag, CdkDragHandle, ShareDialog, ConfirmDialog],
+  imports: [FormsModule, RouterLink, CdkDropList, CdkDropListGroup, CdkDrag, BoardColumn, ShareDialog, ConfirmDialog],
   providers: [BoardDetailService],
   templateUrl: './board-detail-page.html',
 })
@@ -36,7 +36,6 @@ export class BoardDetailPage implements OnInit, OnDestroy {
 
   boardId = '';
   newColumnName = '';
-  newCardTitle = signal<Record<string, string>>({});
   editingCard = signal<Card | null>(null);
   sharingOpen = signal(false);
   deletingColumn = signal<Column | null>(null);
@@ -66,11 +65,6 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     }
     this.categoriesService.loadCategories();
     await this.detail.load(this.boardId);
-  }
-
-  categoryFor(categoryId: string | null): { name: string; color: string } | null {
-    if (!categoryId) return null;
-    return this.categoriesService.categories().find((c) => c.id === categoryId) ?? null;
   }
 
   ngOnDestroy(): void {
@@ -143,17 +137,6 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     await this.detail.addColumn(name);
   }
 
-  async addCard(columnId: string): Promise<void> {
-    const title = (this.newCardTitle()[columnId] ?? '').trim();
-    if (!title) return;
-    this.newCardTitle.update((m) => ({ ...m, [columnId]: '' }));
-    await this.detail.addCard(columnId, title);
-  }
-
-  setNewCardTitle(columnId: string, value: string): void {
-    this.newCardTitle.update((m) => ({ ...m, [columnId]: value }));
-  }
-
   openCard(card: Card): void {
     if (!this.canEdit()) return;
     this.editingCard.set(card);
@@ -209,11 +192,5 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     const columns = [...this.detail.columns()];
     moveItemInArray(columns, event.previousIndex, event.currentIndex);
     this.detail.reorderColumns(columns.map((c) => c.id));
-  }
-
-  dropCard(event: CdkDragDrop<Card[]>, columnId: string): void {
-    if (!this.canEdit()) return;
-    const card = event.item.data as Card;
-    this.detail.moveCard(card.id, columnId, event.currentIndex);
   }
 }
