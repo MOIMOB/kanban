@@ -136,6 +136,16 @@
   </div>
 </div>
 
+@if (detail.pendingDeleteLabel(); as label) {
+  <div
+    role="status"
+    class="fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-4 rounded-lg bg-ink text-paper px-4 py-2 text-sm shadow-lg"
+  >
+    <span>{{ label }}</span>
+    <button type="button" class="font-semibold underline underline-offset-2 hover:opacity-80" (click)="detail.undoDelete()">Undo</button>
+  </div>
+}
+
 @if (editingCard(); as card) {
   <div class="fixed inset-0 bg-black/30 flex items-center justify-center z-10" (click)="editingCard.set(null)">
     <div class="bg-surface rounded-2xl p-6 w-full max-w-md" (click)="$event.stopPropagation()">
@@ -211,7 +221,6 @@
     title="Delete column"
     [message]="'Delete \'' + column.name + '\'? Its ' + detail.cardsIn(column.id).length + ' cards will be deleted too.'"
     confirmLabel="Delete"
-    [busy]="deletingColumnBusy()"
     (confirmed)="confirmDeleteColumn()"
     (closed)="deletingColumn.set(null)"
   />
