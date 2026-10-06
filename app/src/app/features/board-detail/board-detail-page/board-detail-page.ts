@@ -18,6 +18,7 @@ import { BoardColumn } from '../board-column/board-column';
 import { ShareDialog } from '../share-dialog/share-dialog';
 import { ConfirmDialog } from '../../../shared/confirm-dialog/confirm-dialog';
 import type { Card, Column } from '../../../core/models';
+import { cardMatches, EMPTY_FILTER, isFilterActive } from '../card-filter';
 
 @Component({
   selector: 'app-board-detail-page',
@@ -57,6 +58,17 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     Math.min(this.activeColumnIndex(), Math.max(0, this.detail.columns().length - 1)),
   );
   readonly activeColumn = computed(() => this.detail.columns()[this.clampedColumnIndex()]);
+  /** Categories used by cards on this board, for the filter chips. */
+  readonly boardCategories = computed(() => {
+    const used = new Set(this.detail.cards().map((c) => c.category_id));
+    return this.categoriesService.categories().filter((c) => used.has(c.id));
+  });
+  readonly filterActive = computed(() => isFilterActive(this.detail.filter()));
+  readonly matchCount = computed(() => {
+    const filter = this.detail.filter();
+    const names = new Map(this.categoriesService.categories().map((c) => [c.id, c.name]));
+    return this.detail.cards().filter((c) => cardMatches(c, filter, names.get(c.category_id ?? '') ?? null)).length;
+  });
 
   async ngOnInit(): Promise<void> {
     this.boardId = this.route.snapshot.paramMap.get('id')!;
@@ -101,6 +113,18 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     } finally {
       clone.remove();
     }
+  }
+
+  setQuery(query: string): void {
+    this.detail.filter.update((f) => ({ ...f, query }));
+  }
+
+  toggleCategory(categoryId: string): void {
+    this.detail.filter.update((f) => ({ ...f, categoryId: f.categoryId === categoryId ? null : categoryId }));
+  }
+
+  clearFilter(): void {
+    this.detail.filter.set(EMPTY_FILTER);
   }
 
   toggleSingleColumnMode(): void {
