@@ -40,7 +40,6 @@ export class BoardDetailPage implements OnInit, OnDestroy {
   editingCard = signal<Card | null>(null);
   sharingOpen = signal(false);
   deletingColumn = signal<Column | null>(null);
-  deletingColumnBusy = signal(false);
   singleColumnMode = signal(localStorage.getItem('kanban:singleColumnMode') === 'true');
   activeColumnIndex = signal(0);
   private touchStartX = 0;
@@ -184,10 +183,10 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     this.editingCard.set(null);
   }
 
-  async deleteEditingCard(): Promise<void> {
+  deleteEditingCard(): void {
     const card = this.editingCard();
     if (!card) return;
-    await this.detail.deleteCard(card.id);
+    this.detail.deleteCard(card.id);
     this.editingCard.set(null);
   }
 
@@ -199,16 +198,11 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     this.detail.deleteColumn(column.id);
   }
 
-  async confirmDeleteColumn(): Promise<void> {
+  confirmDeleteColumn(): void {
     const column = this.deletingColumn();
     if (!column) return;
-    this.deletingColumnBusy.set(true);
-    try {
-      await this.detail.deleteColumn(column.id);
-      this.deletingColumn.set(null);
-    } finally {
-      this.deletingColumnBusy.set(false);
-    }
+    this.detail.deleteColumn(column.id);
+    this.deletingColumn.set(null);
   }
 
   dropColumn(event: CdkDragDrop<Column[]>): void {
