@@ -25,82 +25,13 @@
         (touchend)="onTouchEnd($event)"
       >
         @if (activeColumn(); as column) {
-          <div class="bg-paper-2/70 rounded-xl p-3 max-w-md mx-auto">
-            <div class="flex items-center justify-between mb-3">
-              <input
-                class="bg-transparent font-display font-medium text-sm text-ink w-full focus:outline-none"
-                [value]="column.name"
-                [disabled]="!canEdit()"
-                (change)="detail.renameColumn(column.id, $any($event.target).value)"
-              />
-              @if (canEdit()) {
-                <button
-                  class="text-ink-soft hover:text-red-600 dark:text-red-400 text-xs shrink-0"
-                  (click)="requestDeleteColumn(column)"
-                >
-                  ✕
-                </button>
-              }
-            </div>
-
-            <p class="text-[11px] text-ink-soft mb-2">
-              {{ detail.cardsIn(column.id).length }} card{{ detail.cardsIn(column.id).length === 1 ? '' : 's' }}
-            </p>
-
-            <div
-              cdkDropList
-              [id]="column.id"
-              [cdkDropListData]="detail.cardsIn(column.id)"
-              (cdkDropListDropped)="dropCard($event, column.id)"
-              class="flex flex-col gap-2 min-h-8"
-            >
-              @for (card of detail.cardsIn(column.id); track card.id) {
-                <div
-                  cdkDrag
-                  [cdkDragData]="card"
-                  [cdkDragDisabled]="!canEdit()"
-                  (click)="openCard(card)"
-                  class="group relative bg-surface rounded-lg p-3 shadow-sm border border-transparent cursor-pointer hover:border-accent hover:shadow-md transition-all"
-                >
-                  <button
-                    type="button"
-                    class="absolute top-1.5 right-1.5 text-ink-soft hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1"
-                    title="Copy title + description"
-                    (click)="copyCard(card, $event)"
-                  >
-                    ⧉
-                  </button>
-                  @if (categoryFor(card.category_id); as category) {
-                    <span
-                      class="inline-block text-[10px] font-medium text-white rounded-full px-2 py-0.5 mb-1"
-                      [style.background]="category.color"
-                    >
-                      {{ category.name }}
-                    </span>
-                  }
-                  <p class="text-sm text-ink font-medium pr-4">{{ card.title }}</p>
-                  @if (card.description) {
-                    <p class="text-xs text-ink-soft mt-1 line-clamp-3 max-h-12 overflow-hidden">{{ card.description }}</p>
-                  }
-                  @if (card.due_date) {
-                    <p class="text-[11px] text-accent font-medium mt-1.5">{{ card.due_date }}</p>
-                  }
-                </div>
-              }
-            </div>
-
-            @if (canEdit()) {
-              <form class="mt-2 flex gap-1" (ngSubmit)="addCard(column.id)">
-                <input
-                  class="flex-1 text-xs rounded border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-accent bg-surface text-ink"
-                  placeholder="Add card"
-                  [ngModel]="newCardTitle()[column.id] ?? ''"
-                  (ngModelChange)="setNewCardTitle(column.id, $event)"
-                  name="newCard-{{ column.id }}"
-                />
-              </form>
-            }
-          </div>
+          <app-board-column
+            class="max-w-md mx-auto"
+            [column]="column"
+            [canEdit]="canEdit()"
+            (openCard)="openCard($event)"
+            (deleteColumn)="requestDeleteColumn($event)"
+          />
         }
       </div>
     }
@@ -116,85 +47,13 @@
       <div #captureContent cdkDropListGroup class="flex gap-4 items-start">
         @for (column of detail.columns(); track column.id) {
           <div cdkDrag [cdkDragData]="column" [cdkDragDisabled]="!canEdit()" class="w-72 shrink-0">
-            <div class="bg-paper-2/70 rounded-xl p-3">
-              <div class="flex items-center justify-between mb-3" cdkDragHandle>
-                <input
-                  class="bg-transparent font-display font-medium text-sm text-ink w-full focus:outline-none"
-                  [value]="column.name"
-                  [disabled]="!canEdit()"
-                  (change)="detail.renameColumn(column.id, $any($event.target).value)"
-                />
-                @if (canEdit()) {
-                  <button
-                    class="text-ink-soft hover:text-red-600 dark:text-red-400 text-xs shrink-0"
-                    (click)="requestDeleteColumn(column)"
-                  >
-                    ✕
-                  </button>
-                }
-              </div>
-
-              <p class="text-[11px] text-ink-soft mb-2">
-                {{ detail.cardsIn(column.id).length }} card{{ detail.cardsIn(column.id).length === 1 ? '' : 's' }}
-              </p>
-
-              <div
-                cdkDropList
-                [id]="column.id"
-                [cdkDropListData]="detail.cardsIn(column.id)"
-                (cdkDropListDropped)="dropCard($event, column.id)"
-                class="flex flex-col gap-2 min-h-8"
-              >
-                @for (card of detail.cardsIn(column.id); track card.id) {
-                  <div
-                    cdkDrag
-                    [cdkDragData]="card"
-                    [cdkDragDisabled]="!canEdit()"
-                    (click)="openCard(card)"
-                    class="group relative bg-surface rounded-lg p-3 shadow-sm border border-transparent cursor-pointer hover:border-accent hover:shadow-md transition-all"
-                  >
-                    <button
-                      type="button"
-                      class="absolute top-1.5 right-1.5 text-ink-soft hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1"
-                      title="Copy title + description"
-                      (click)="copyCard(card, $event)"
-                    >
-                      ⧉
-                    </button>
-                    @if (categoryFor(card.category_id); as category) {
-                      <span
-                        class="inline-block text-[10px] font-medium text-white rounded-full px-2 py-0.5 mb-1"
-                        [style.background]="category.color"
-                      >
-                        {{ category.name }}
-                      </span>
-                    }
-                    <p class="text-sm text-ink font-medium pr-4">{{ card.title }}</p>
-                    @if (card.description) {
-                      <p class="text-xs text-ink-soft mt-1 line-clamp-3 max-h-12 overflow-hidden">{{ card.description }}</p>
-                    }
-                    @if (card.due_date) {
-                      <p class="text-[11px] text-accent font-medium mt-1.5">{{ card.due_date }}</p>
-                    }
-                  </div>
-                }
-              </div>
-
-              @if (canEdit()) {
-                <form
-                  class="mt-2 flex gap-1"
-                  (ngSubmit)="addCard(column.id)"
-                >
-                  <input
-                    class="flex-1 text-xs rounded border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-accent bg-surface text-ink"
-                    placeholder="Add card"
-                    [ngModel]="newCardTitle()[column.id] ?? ''"
-                    (ngModelChange)="setNewCardTitle(column.id, $event)"
-                    name="newCard-{{ column.id }}"
-                  />
-                </form>
-              }
-            </div>
+            <app-board-column
+              [column]="column"
+              [canEdit]="canEdit()"
+              [dragHandle]="true"
+              (openCard)="openCard($event)"
+              (deleteColumn)="requestDeleteColumn($event)"
+            />
           </div>
         }
       </div>
