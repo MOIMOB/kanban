@@ -16,6 +16,38 @@
     </div>
   </header>
 
+  @if (detail.cards().length > 0) {
+    <div class="px-6 flex items-center gap-2 flex-wrap">
+      <input
+        type="search"
+        class="w-56 text-sm rounded-md border border-border px-3 py-1.5 bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+        placeholder="Search cards"
+        aria-label="Search cards"
+        [ngModel]="detail.filter().query"
+        (ngModelChange)="setQuery($event)"
+        (keydown.escape)="clearFilter()"
+      />
+      @for (category of boardCategories(); track category.id) {
+        <button
+          type="button"
+          class="text-xs font-medium rounded-full px-2.5 py-1 border transition-opacity"
+          [style.background]="detail.filter().categoryId === category.id ? category.color : null"
+          [style.borderColor]="category.color"
+          [class.text-white]="detail.filter().categoryId === category.id"
+          [class.text-ink]="detail.filter().categoryId !== category.id"
+          [attr.aria-pressed]="detail.filter().categoryId === category.id"
+          (click)="toggleCategory(category.id)"
+        >
+          {{ category.name }}
+        </button>
+      }
+      @if (filterActive()) {
+        <span class="text-xs text-ink-soft">{{ matchCount() }} of {{ detail.cards().length }} cards</span>
+        <button type="button" class="text-xs text-ink-soft hover:text-accent" (click)="clearFilter()">Clear</button>
+      }
+    </div>
+  }
+
   <main class="flex-1 overflow-x-auto px-6 py-6 pb-20 sm:pb-6 bg-paper">
     @if (detail.columns().length > 0) {
       <div
@@ -25,82 +57,13 @@
         (touchend)="onTouchEnd($event)"
       >
         @if (activeColumn(); as column) {
-          <div class="bg-paper-2/70 rounded-xl p-3 max-w-md mx-auto">
-            <div class="flex items-center justify-between mb-3">
-              <input
-                class="bg-transparent font-display font-medium text-sm text-ink w-full focus:outline-none"
-                [value]="column.name"
-                [disabled]="!canEdit()"
-                (change)="detail.renameColumn(column.id, $any($event.target).value)"
-              />
-              @if (canEdit()) {
-                <button
-                  class="text-ink-soft hover:text-red-600 dark:text-red-400 text-xs shrink-0"
-                  (click)="requestDeleteColumn(column)"
-                >
-                  ✕
-                </button>
-              }
-            </div>
-
-            <p class="text-[11px] text-ink-soft mb-2">
-              {{ detail.cardsIn(column.id).length }} card{{ detail.cardsIn(column.id).length === 1 ? '' : 's' }}
-            </p>
-
-            <div
-              cdkDropList
-              [id]="column.id"
-              [cdkDropListData]="detail.cardsIn(column.id)"
-              (cdkDropListDropped)="dropCard($event, column.id)"
-              class="flex flex-col gap-2 min-h-8"
-            >
-              @for (card of detail.cardsIn(column.id); track card.id) {
-                <div
-                  cdkDrag
-                  [cdkDragData]="card"
-                  [cdkDragDisabled]="!canEdit()"
-                  (click)="openCard(card)"
-                  class="group relative bg-surface rounded-lg p-3 shadow-sm border border-transparent cursor-pointer hover:border-accent hover:shadow-md transition-all"
-                >
-                  <button
-                    type="button"
-                    class="absolute top-1.5 right-1.5 text-ink-soft hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1"
-                    title="Copy title + description"
-                    (click)="copyCard(card, $event)"
-                  >
-                    ⧉
-                  </button>
-                  @if (categoryFor(card.category_id); as category) {
-                    <span
-                      class="inline-block text-[10px] font-medium text-white rounded-full px-2 py-0.5 mb-1"
-                      [style.background]="category.color"
-                    >
-                      {{ category.name }}
-                    </span>
-                  }
-                  <p class="text-sm text-ink font-medium pr-4">{{ card.title }}</p>
-                  @if (card.description) {
-                    <p class="text-xs text-ink-soft mt-1 line-clamp-3 max-h-12 overflow-hidden">{{ card.description }}</p>
-                  }
-                  @if (card.due_date) {
-                    <p class="text-[11px] text-accent font-medium mt-1.5">{{ card.due_date }}</p>
-                  }
-                </div>
-              }
-            </div>
-
-            @if (canEdit()) {
-              <form class="mt-2 flex gap-1" (ngSubmit)="addCard(column.id)">
-                <input
-                  class="flex-1 text-xs rounded border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-accent bg-surface text-ink"
-                  placeholder="Add card"
-                  [ngModel]="newCardTitle()[column.id] ?? ''"
-                  (ngModelChange)="setNewCardTitle(column.id, $event)"
-                  name="newCard-{{ column.id }}"
-                />
-              </form>
-            }
-          </div>
+          <app-board-column
+            class="max-w-md mx-auto"
+            [column]="column"
+            [canEdit]="canEdit()"
+            (openCard)="openCard($event)"
+            (deleteColumn)="requestDeleteColumn($event)"
+          />
         }
       </div>
     }
@@ -116,85 +79,13 @@
       <div #captureContent cdkDropListGroup class="flex gap-4 items-start">
         @for (column of detail.columns(); track column.id) {
           <div cdkDrag [cdkDragData]="column" [cdkDragDisabled]="!canEdit()" class="w-72 shrink-0">
-            <div class="bg-paper-2/70 rounded-xl p-3">
-              <div class="flex items-center justify-between mb-3" cdkDragHandle>
-                <input
-                  class="bg-transparent font-display font-medium text-sm text-ink w-full focus:outline-none"
-                  [value]="column.name"
-                  [disabled]="!canEdit()"
-                  (change)="detail.renameColumn(column.id, $any($event.target).value)"
-                />
-                @if (canEdit()) {
-                  <button
-                    class="text-ink-soft hover:text-red-600 dark:text-red-400 text-xs shrink-0"
-                    (click)="requestDeleteColumn(column)"
-                  >
-                    ✕
-                  </button>
-                }
-              </div>
-
-              <p class="text-[11px] text-ink-soft mb-2">
-                {{ detail.cardsIn(column.id).length }} card{{ detail.cardsIn(column.id).length === 1 ? '' : 's' }}
-              </p>
-
-              <div
-                cdkDropList
-                [id]="column.id"
-                [cdkDropListData]="detail.cardsIn(column.id)"
-                (cdkDropListDropped)="dropCard($event, column.id)"
-                class="flex flex-col gap-2 min-h-8"
-              >
-                @for (card of detail.cardsIn(column.id); track card.id) {
-                  <div
-                    cdkDrag
-                    [cdkDragData]="card"
-                    [cdkDragDisabled]="!canEdit()"
-                    (click)="openCard(card)"
-                    class="group relative bg-surface rounded-lg p-3 shadow-sm border border-transparent cursor-pointer hover:border-accent hover:shadow-md transition-all"
-                  >
-                    <button
-                      type="button"
-                      class="absolute top-1.5 right-1.5 text-ink-soft hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity text-xs px-1"
-                      title="Copy title + description"
-                      (click)="copyCard(card, $event)"
-                    >
-                      ⧉
-                    </button>
-                    @if (categoryFor(card.category_id); as category) {
-                      <span
-                        class="inline-block text-[10px] font-medium text-white rounded-full px-2 py-0.5 mb-1"
-                        [style.background]="category.color"
-                      >
-                        {{ category.name }}
-                      </span>
-                    }
-                    <p class="text-sm text-ink font-medium pr-4">{{ card.title }}</p>
-                    @if (card.description) {
-                      <p class="text-xs text-ink-soft mt-1 line-clamp-3 max-h-12 overflow-hidden">{{ card.description }}</p>
-                    }
-                    @if (card.due_date) {
-                      <p class="text-[11px] text-accent font-medium mt-1.5">{{ card.due_date }}</p>
-                    }
-                  </div>
-                }
-              </div>
-
-              @if (canEdit()) {
-                <form
-                  class="mt-2 flex gap-1"
-                  (ngSubmit)="addCard(column.id)"
-                >
-                  <input
-                    class="flex-1 text-xs rounded border border-border px-2 py-1 focus:outline-none focus:ring-1 focus:ring-accent bg-surface text-ink"
-                    placeholder="Add card"
-                    [ngModel]="newCardTitle()[column.id] ?? ''"
-                    (ngModelChange)="setNewCardTitle(column.id, $event)"
-                    name="newCard-{{ column.id }}"
-                  />
-                </form>
-              }
-            </div>
+            <app-board-column
+              [column]="column"
+              [canEdit]="canEdit()"
+              [dragHandle]="true"
+              (openCard)="openCard($event)"
+              (deleteColumn)="requestDeleteColumn($event)"
+            />
           </div>
         }
       </div>
@@ -244,6 +135,16 @@
     }
   </div>
 </div>
+
+@if (detail.pendingDeleteLabel(); as label) {
+  <div
+    role="status"
+    class="fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-4 rounded-lg bg-ink text-paper px-4 py-2 text-sm shadow-lg"
+  >
+    <span>{{ label }}</span>
+    <button type="button" class="font-semibold underline underline-offset-2 hover:opacity-80" (click)="detail.undoDelete()">Undo</button>
+  </div>
+}
 
 @if (editingCard(); as card) {
   <div class="fixed inset-0 bg-black/30 flex items-center justify-center z-10" (click)="editingCard.set(null)">
@@ -320,7 +221,6 @@
     title="Delete column"
     [message]="'Delete \'' + column.name + '\'? Its ' + detail.cardsIn(column.id).length + ' cards will be deleted too.'"
     confirmLabel="Delete"
-    [busy]="deletingColumnBusy()"
     (confirmed)="confirmDeleteColumn()"
     (closed)="deletingColumn.set(null)"
   />

@@ -4,6 +4,19 @@ import { getSupabase } from '../../core/supabase.client';
 import { AuthService } from '../../core/auth.service';
 import { LoadingIndicatorService } from '../../core/loading-indicator.service';
 import type { Card, Column } from '../../core/models';
+import { EMPTY_FILTER, type CardFilter } from './card-filter';
+
+/** How long a deleted card/column can be restored before the row is actually deleted. */
+export const UNDO_MS = 6000;
+
+interface PendingDelete {
+  label: string;
+  columnId: string | null;
+  cardIds: Set<string>;
+  timer: ReturnType<typeof setTimeout>;
+  commit: () => Promise<void>;
+  restore: () => void;
+}
 
 @Injectable()
 export class BoardDetailService {
@@ -15,6 +28,11 @@ export class BoardDetailService {
 
   readonly columns = signal<Column[]>([]);
   readonly cards = signal<Card[]>([]);
+  /** Board search/category filter. Non-matching cards are dimmed, not removed, so drag indexes stay valid. */
+  readonly filter = signal<CardFilter>(EMPTY_FILTER);
+  /** Toast text while a delete can still be undone. */
+  readonly pendingDeleteLabel = signal<string | null>(null);
+  private pendingDelete: PendingDelete | null = null;
 
   cardsIn(columnId: string): Card[] {
     return this.cards()
@@ -58,6 +76,7 @@ export class BoardDetailService {
             return;
           }
           const row = payload.new as Column;
+          if (this.pendingDelete?.columnId === row.id) return; // deleted locally, awaiting undo
           this.columns.update((cols) => {
             const next = cols.some((c) => c.id === row.id)
               ? cols.map((c) => (c.id === row.id ? row : c))
@@ -77,6 +96,7 @@ export class BoardDetailService {
           }
           const row = payload.new as Card;
           if (!this.columns().some((c) => c.id === row.column_id)) return; // not this board
+          if (this.pendingDelete?.cardIds.has(row.id)) return; // deleted locally, awaiting undo
           this.cards.update((cards) =>
             cards.some((c) => c.id === row.id)
               ? cards.map((c) => (c.id === row.id ? row : c))
@@ -88,8 +108,52 @@ export class BoardDetailService {
   }
 
   dispose(): void {
+    void this.flushPendingDelete();
     this.channel?.unsubscribe();
     this.channel = null;
+  }
+
+  /**
+   * Removes rows from the UI now and deletes them after UNDO_MS unless
+   * undoDelete() is called. Only one delete is pending at a time; staging a
+   * new one commits the previous immediately.
+   */
+  private stageDelete(label: string, columnId: string | null, cardIds: string[], commit: () => Promise<void>, restore: () => void): void {
+    void this.flushPendingDelete();
+    const pending: PendingDelete = {
+      label,
+      columnId,
+      cardIds: new Set(cardIds),
+      commit,
+      restore,
+      timer: setTimeout(() => void this.flushPendingDelete(), UNDO_MS),
+    };
+    this.pendingDelete = pending;
+    this.pendingDeleteLabel.set(label);
+  }
+
+  undoDelete(): void {
+    const pending = this.pendingDelete;
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    this.pendingDelete = null;
+    this.pendingDeleteLabel.set(null);
+    pending.restore();
+  }
+
+  /** Commits the pending delete now. On failure the rows are put back. */
+  async flushPendingDelete(): Promise<void> {
+    const pending = this.pendingDelete;
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    this.pendingDelete = null;
+    this.pendingDeleteLabel.set(null);
+    try {
+      await pending.commit();
+    } catch (e) {
+      pending.restore();
+      console.error('Delete failed', e);
+    }
   }
 
   async addColumn(name: string): Promise<void> {
@@ -149,14 +213,26 @@ export class BoardDetailService {
     }
   }
 
-  async deleteColumn(columnId: string): Promise<void> {
-    const previous = this.columns();
+  deleteColumn(columnId: string): void {
+    const column = this.columns().find((c) => c.id === columnId);
+    if (!column) return;
+    const cards = this.cards().filter((c) => c.column_id === columnId);
     this.columns.update((cols) => cols.filter((c) => c.id !== columnId));
-    const { error } = await this.supabase.from('kanban_columns').delete().eq('id', columnId);
-    if (error) {
-      this.columns.set(previous);
-      throw error;
-    }
+    this.cards.update((all) => all.filter((c) => c.column_id !== columnId));
+    this.stageDelete(
+      `Column "${column.name}" deleted`,
+      columnId,
+      cards.map((c) => c.id),
+      async () => {
+        // Cards go with it via ON DELETE CASCADE.
+        const { error } = await this.supabase.from('kanban_columns').delete().eq('id', columnId);
+        if (error) throw error;
+      },
+      () => {
+        this.columns.update((cols) => [...cols, column].sort((a, b) => a.position - b.position));
+        this.cards.update((all) => [...all, ...cards]);
+      },
+    );
   }
 
   async addCard(columnId: string, title: string): Promise<void> {
@@ -199,14 +275,20 @@ export class BoardDetailService {
     }
   }
 
-  async deleteCard(cardId: string): Promise<void> {
-    const previous = this.cards();
+  deleteCard(cardId: string): void {
+    const card = this.cards().find((c) => c.id === cardId);
+    if (!card) return;
     this.cards.update((cards) => cards.filter((c) => c.id !== cardId));
-    const { error } = await this.supabase.from('kanban_cards').delete().eq('id', cardId);
-    if (error) {
-      this.cards.set(previous);
-      throw error;
-    }
+    this.stageDelete(
+      'Card deleted',
+      null,
+      [cardId],
+      async () => {
+        const { error } = await this.supabase.from('kanban_cards').delete().eq('id', cardId);
+        if (error) throw error;
+      },
+      () => this.cards.update((cards) => [...cards, card]),
+    );
   }
 
   /** Moves a card to a column at a given position, and re-numbers siblings. */

@@ -5,7 +5,6 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   CdkDrag,
   CdkDragDrop,
-  CdkDragHandle,
   CdkDropList,
   CdkDropListGroup,
   moveItemInArray,
@@ -15,14 +14,16 @@ import { BoardsService } from '../../boards/boards.service';
 import { CategoriesService } from '../../categories/categories.service';
 import { AuthService } from '../../../core/auth.service';
 import { ThemeService } from '../../../core/theme.service';
+import { BoardColumn } from '../board-column/board-column';
 import { ShareDialog } from '../share-dialog/share-dialog';
 import { ConfirmDialog } from '../../../shared/confirm-dialog/confirm-dialog';
 import type { Card, Column } from '../../../core/models';
+import { cardMatches, EMPTY_FILTER, isFilterActive } from '../card-filter';
 
 @Component({
   selector: 'app-board-detail-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, CdkDropList, CdkDropListGroup, CdkDrag, CdkDragHandle, ShareDialog, ConfirmDialog],
+  imports: [FormsModule, RouterLink, CdkDropList, CdkDropListGroup, CdkDrag, BoardColumn, ShareDialog, ConfirmDialog],
   providers: [BoardDetailService],
   templateUrl: './board-detail-page.html',
 })
@@ -36,11 +37,9 @@ export class BoardDetailPage implements OnInit, OnDestroy {
 
   boardId = '';
   newColumnName = '';
-  newCardTitle = signal<Record<string, string>>({});
   editingCard = signal<Card | null>(null);
   sharingOpen = signal(false);
   deletingColumn = signal<Column | null>(null);
-  deletingColumnBusy = signal(false);
   singleColumnMode = signal(localStorage.getItem('kanban:singleColumnMode') === 'true');
   activeColumnIndex = signal(0);
   private touchStartX = 0;
@@ -58,6 +57,17 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     Math.min(this.activeColumnIndex(), Math.max(0, this.detail.columns().length - 1)),
   );
   readonly activeColumn = computed(() => this.detail.columns()[this.clampedColumnIndex()]);
+  /** Categories used by cards on this board, for the filter chips. */
+  readonly boardCategories = computed(() => {
+    const used = new Set(this.detail.cards().map((c) => c.category_id));
+    return this.categoriesService.categories().filter((c) => used.has(c.id));
+  });
+  readonly filterActive = computed(() => isFilterActive(this.detail.filter()));
+  readonly matchCount = computed(() => {
+    const filter = this.detail.filter();
+    const names = new Map(this.categoriesService.categories().map((c) => [c.id, c.name]));
+    return this.detail.cards().filter((c) => cardMatches(c, filter, names.get(c.category_id ?? '') ?? null)).length;
+  });
 
   async ngOnInit(): Promise<void> {
     this.boardId = this.route.snapshot.paramMap.get('id')!;
@@ -66,11 +76,6 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     }
     this.categoriesService.loadCategories();
     await this.detail.load(this.boardId);
-  }
-
-  categoryFor(categoryId: string | null): { name: string; color: string } | null {
-    if (!categoryId) return null;
-    return this.categoriesService.categories().find((c) => c.id === categoryId) ?? null;
   }
 
   ngOnDestroy(): void {
@@ -109,6 +114,18 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     }
   }
 
+  setQuery(query: string): void {
+    this.detail.filter.update((f) => ({ ...f, query }));
+  }
+
+  toggleCategory(categoryId: string): void {
+    this.detail.filter.update((f) => ({ ...f, categoryId: f.categoryId === categoryId ? null : categoryId }));
+  }
+
+  clearFilter(): void {
+    this.detail.filter.set(EMPTY_FILTER);
+  }
+
   toggleSingleColumnMode(): void {
     const next = !this.singleColumnMode();
     this.singleColumnMode.set(next);
@@ -143,17 +160,6 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     await this.detail.addColumn(name);
   }
 
-  async addCard(columnId: string): Promise<void> {
-    const title = (this.newCardTitle()[columnId] ?? '').trim();
-    if (!title) return;
-    this.newCardTitle.update((m) => ({ ...m, [columnId]: '' }));
-    await this.detail.addCard(columnId, title);
-  }
-
-  setNewCardTitle(columnId: string, value: string): void {
-    this.newCardTitle.update((m) => ({ ...m, [columnId]: value }));
-  }
-
   openCard(card: Card): void {
     if (!this.canEdit()) return;
     this.editingCard.set(card);
@@ -177,10 +183,10 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     this.editingCard.set(null);
   }
 
-  async deleteEditingCard(): Promise<void> {
+  deleteEditingCard(): void {
     const card = this.editingCard();
     if (!card) return;
-    await this.detail.deleteCard(card.id);
+    this.detail.deleteCard(card.id);
     this.editingCard.set(null);
   }
 
@@ -192,16 +198,11 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     this.detail.deleteColumn(column.id);
   }
 
-  async confirmDeleteColumn(): Promise<void> {
+  confirmDeleteColumn(): void {
     const column = this.deletingColumn();
     if (!column) return;
-    this.deletingColumnBusy.set(true);
-    try {
-      await this.detail.deleteColumn(column.id);
-      this.deletingColumn.set(null);
-    } finally {
-      this.deletingColumnBusy.set(false);
-    }
+    this.detail.deleteColumn(column.id);
+    this.deletingColumn.set(null);
   }
 
   dropColumn(event: CdkDragDrop<Column[]>): void {
@@ -209,11 +210,5 @@ export class BoardDetailPage implements OnInit, OnDestroy {
     const columns = [...this.detail.columns()];
     moveItemInArray(columns, event.previousIndex, event.currentIndex);
     this.detail.reorderColumns(columns.map((c) => c.id));
-  }
-
-  dropCard(event: CdkDragDrop<Card[]>, columnId: string): void {
-    if (!this.canEdit()) return;
-    const card = event.item.data as Card;
-    this.detail.moveCard(card.id, columnId, event.currentIndex);
   }
 }
