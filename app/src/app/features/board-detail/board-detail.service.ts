@@ -4,6 +4,7 @@ import { getSupabase } from '../../core/supabase.client';
 import { AuthService } from '../../core/auth.service';
 import { LoadingIndicatorService } from '../../core/loading-indicator.service';
 import type { Card, Column } from '../../core/models';
+import { EMPTY_FILTER, type CardFilter } from './card-filter';
 
 @Injectable()
 export class BoardDetailService {
@@ -15,6 +16,8 @@ export class BoardDetailService {
 
   readonly columns = signal<Column[]>([]);
   readonly cards = signal<Card[]>([]);
+  /** Board search/category filter. Non-matching cards are dimmed, not removed, so drag indexes stay valid. */
+  readonly filter = signal<CardFilter>(EMPTY_FILTER);
 
   cardsIn(columnId: string): Card[] {
     return this.cards()

@@ -16,6 +16,38 @@
     </div>
   </header>
 
+  @if (detail.cards().length > 0) {
+    <div class="px-6 flex items-center gap-2 flex-wrap">
+      <input
+        type="search"
+        class="w-56 text-sm rounded-md border border-border px-3 py-1.5 bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+        placeholder="Search cards"
+        aria-label="Search cards"
+        [ngModel]="detail.filter().query"
+        (ngModelChange)="setQuery($event)"
+        (keydown.escape)="clearFilter()"
+      />
+      @for (category of boardCategories(); track category.id) {
+        <button
+          type="button"
+          class="text-xs font-medium rounded-full px-2.5 py-1 border transition-opacity"
+          [style.background]="detail.filter().categoryId === category.id ? category.color : null"
+          [style.borderColor]="category.color"
+          [class.text-white]="detail.filter().categoryId === category.id"
+          [class.text-ink]="detail.filter().categoryId !== category.id"
+          [attr.aria-pressed]="detail.filter().categoryId === category.id"
+          (click)="toggleCategory(category.id)"
+        >
+          {{ category.name }}
+        </button>
+      }
+      @if (filterActive()) {
+        <span class="text-xs text-ink-soft">{{ matchCount() }} of {{ detail.cards().length }} cards</span>
+        <button type="button" class="text-xs text-ink-soft hover:text-accent" (click)="clearFilter()">Clear</button>
+      }
+    </div>
+  }
+
   <main class="flex-1 overflow-x-auto px-6 py-6 pb-20 sm:pb-6 bg-paper">
     @if (detail.columns().length > 0) {
       <div
