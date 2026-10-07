@@ -11,7 +11,7 @@ describe('authGuard', () => {
         provideRouter([]),
         {
           provide: AuthService,
-          useValue: { ready: signal(true), user: signal(user) },
+          useValue: { whenReady: async () => {}, user: signal(user) },
         },
       ],
     });

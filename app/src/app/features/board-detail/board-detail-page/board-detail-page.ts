@@ -19,6 +19,7 @@ import { ShareDialog } from '../share-dialog/share-dialog';
 import { ConfirmDialog } from '../../../shared/confirm-dialog/confirm-dialog';
 import type { Card, Column } from '../../../core/models';
 import { cardMatches, EMPTY_FILTER, isFilterActive } from '../card-filter';
+import { parseEmbedConfig } from '../../../core/embed';
 
 @Component({
   selector: 'app-board-detail-page',
@@ -35,6 +36,10 @@ export class BoardDetailPage implements OnInit, OnDestroy {
   protected readonly categoriesService = inject(CategoriesService);
   protected readonly theme = inject(ThemeService);
 
+  /** Set on the `/embed/:id` route: no back link/sharing, config from query params. */
+  protected readonly embed = this.route.snapshot.data['embed'] === true;
+  protected readonly embedConfig = parseEmbedConfig(this.embed ? this.route.snapshot.queryParams : {});
+
   boardId = '';
   newColumnName = '';
   editingCard = signal<Card | null>(null);
@@ -50,9 +55,10 @@ export class BoardDetailPage implements OnInit, OnDestroy {
   );
   readonly canEdit = computed(() => {
     const role = this.board()?.role;
+    if (this.embedConfig.readonly) return false;
     return role === 'owner' || role === 'editor';
   });
-  readonly isOwner = computed(() => this.board()?.role === 'owner');
+  readonly isOwner = computed(() => !this.embed && this.board()?.role === 'owner');
   readonly clampedColumnIndex = computed(() =>
     Math.min(this.activeColumnIndex(), Math.max(0, this.detail.columns().length - 1)),
   );
@@ -71,6 +77,7 @@ export class BoardDetailPage implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     this.boardId = this.route.snapshot.paramMap.get('id')!;
+    if (this.embedConfig.theme) this.theme.override(this.embedConfig.theme === 'dark');
     if (this.boardsService.boards().length === 0) {
       await this.boardsService.loadBoards();
     }

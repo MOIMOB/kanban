@@ -106,3 +106,25 @@ Sharing is unavailable in demo mode.
 
 Run the demo e2e suite (`cypress/demo`) against a `DEMO_MODE=true` build:
 `npx serve -s dist/app/browser -l 4200` then `npx cypress run --config-file cypress.demo.config.ts`.
+
+## Embedding a board (dashboards, iframes)
+
+`/embed/<boardId>` shows a single board without the sidebar or navigation, for
+dashboards and wall tablets:
+
+```html
+<iframe src="https://kanban.example.com/embed/<boardId>?theme=dark&readonly=true#email=wall%40example.com&password=..."></iframe>
+```
+
+| Query param | Values | Default |
+| --- | --- | --- |
+| `theme` | `light` / `dark` (not saved) | stored/system theme |
+| `readonly` | `true` disables all editing | `false` |
+| `toolbar` | `false` hides the title and search/filter bar | `true` |
+
+Credentials are optional and go in the URL **fragment** (`#email=...&password=...`,
+URL-encoded), which browsers never send to the server. The app signs in, then
+strips them from the address bar. The iframe's `src` still holds the password,
+so anyone who can see the dashboard's page source can read it. Use a dedicated
+account that only has **viewer** access to the boards you embed, never your
+own. Without credentials the embed uses an existing session, or shows the login page.

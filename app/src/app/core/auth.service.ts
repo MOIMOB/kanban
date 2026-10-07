@@ -23,14 +23,24 @@ export class AuthService {
     });
   }
 
+  /** Resolves once the initial session has been restored. */
+  async whenReady(): Promise<void> {
+    while (!this.ready()) await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+
   async signUp(email: string, password: string) {
     const { error } = await this.supabase.auth.signUp({ email, password });
     if (error) throw error;
   }
 
   async signIn(email: string, password: string) {
-    const { error } = await this.supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    // Set eagerly so a guard re-run right after sign-in sees the user.
+    if (data?.session) {
+      this.session.set(data.session);
+      this.user.set(data.session.user);
+    }
   }
 
   async signOut() {
