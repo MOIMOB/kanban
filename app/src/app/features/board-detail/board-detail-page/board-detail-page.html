@@ -1,7 +1,10 @@
 <div class="min-h-screen bg-paper flex flex-col">
+  @if (embedConfig.toolbar) {
   <header class="px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
     <div class="flex items-center gap-3">
-      <a routerLink="/boards" class="text-sm text-ink-soft hover:text-ink">&larr; Boards</a>
+      @if (!embed) {
+        <a routerLink="/boards" class="text-sm text-ink-soft hover:text-ink">&larr; Boards</a>
+      }
       <h1 class="font-display text-lg font-semibold text-ink tracking-tight">{{ board()?.name }}</h1>
     </div>
     <div class="flex items-center gap-2 sm:gap-4">
@@ -15,8 +18,9 @@
       }
     </div>
   </header>
+  }
 
-  @if (detail.cards().length > 0) {
+  @if (embedConfig.toolbar && detail.cards().length > 0) {
     <div class="px-6 flex items-center gap-2 flex-wrap">
       <input
         type="search"
@@ -184,9 +188,11 @@
 
       <div class="flex items-center justify-between mb-1">
         <label class="block text-xs font-medium text-ink-soft">Category</label>
-        <a routerLink="/categories" class="text-xs text-accent hover:text-accent-dark transition-colors">
-          Manage categories
-        </a>
+        @if (!embed) {
+          <a routerLink="/categories" class="text-xs text-accent hover:text-accent-dark transition-colors">
+            Manage categories
+          </a>
+        }
       </div>
       <select
         class="w-full mb-6 rounded-md border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-surface text-ink"

@@ -2,6 +2,7 @@ import { Router, Routes } from '@angular/router';
 import { inject } from '@angular/core';
 import { isDemoMode } from './core/config';
 import { authGuard } from './core/auth.guard';
+import { embedGuard } from './core/embed.guard';
 import { boardSnapshotGuard } from './features/board-detail/board-snapshot.guard';
 
 export const routes: Routes = [
@@ -10,6 +11,14 @@ export const routes: Routes = [
     // No login in demo mode.
     canActivate: [() => (isDemoMode() ? inject(Router).parseUrl('/boards') : true)],
     loadComponent: () => import('./features/auth/login-page/login-page').then((m) => m.LoginPage),
+  },
+  {
+    // Single board without the app shell, for iframes. See core/embed.ts.
+    path: 'embed/:id',
+    canActivate: [embedGuard],
+    data: { embed: true },
+    loadComponent: () =>
+      import('./features/board-detail/board-detail-page/board-detail-page').then((m) => m.BoardDetailPage),
   },
   {
     path: '',
