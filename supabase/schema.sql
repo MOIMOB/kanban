@@ -133,6 +133,13 @@ security definer
 set search_path = public
 as $$
 begin
+  -- This trigger fires for every new row in the shared auth.users table, not just this app's own
+  -- signups. Other apps on the same project can create users with no email (e.g. Hauslog's
+  -- anonymous guest sign-in) — kanban_profiles.email is not null, so skip those rather than fail
+  -- the whole auth.users insert for every app sharing the project.
+  if new.is_anonymous or new.email is null then
+    return new;
+  end if;
   insert into public.kanban_profiles (id, email) values (new.id, new.email);
   return new;
 end;
